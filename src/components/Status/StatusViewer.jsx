@@ -1,15 +1,10 @@
 import React, { useEffect, useState } from "react";
 import stories from "./DummyStory";
 import Progressbar from "./Progressbar";
-import {
-  BsArrowLeft,
-  BsEmojiSmile,
-  BsFilter,
-  BsMic,
-  BsThreeDotsVertical,
-} from "react-icons/bs";
+import { BsArrowLeft } from "react-icons/bs";
 import { AiOutlineClose } from "react-icons/ai";
 import { useNavigate } from "react-router-dom";
+
 const StatusViewer = () => {
   const [currentStoryIndex, setCurrentStoryIndex] = useState(0);
   const [activeIndex, setActiveIndex] = useState(0);
@@ -46,7 +41,7 @@ const StatusViewer = () => {
             {stories.map((item, index) => (
               <Progressbar
                 key={index}
-                duration={2000}
+                duration={1500}
                 index={index}
                 activeIndex={activeIndex}
               />

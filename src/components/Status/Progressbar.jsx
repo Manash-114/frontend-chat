@@ -6,17 +6,19 @@ const Progressbar = ({ index, activeIndex, duration }) => {
   const [progress, setProgress] = useState();
 
   useEffect(() => {
+    setProgress(0);
+  }, [activeIndex]);
+  useEffect(() => {
+    console.log("progress start");
     const intervalId = setInterval(() => {
       setProgress((prev) => {
-        if (prev < 100) return prev + 1;
+        if (prev < 100) {
+          return prev + 1;
+        }
         clearInterval(intervalId);
         return prev;
       });
     }, duration / 100);
-  }, [duration, activeIndex]);
-
-  useEffect(() => {
-    setProgress(0);
   }, [activeIndex]);
 
   return (
