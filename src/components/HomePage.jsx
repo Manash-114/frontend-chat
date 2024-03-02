@@ -14,6 +14,8 @@ import ChatCard from "./ChatCard/ChatCard";
 import MessageCard from "./MessageCard/MessageCard";
 import { useNavigate } from "react-router-dom";
 import Profile from "./Profile/Profile";
+import { Button, Menu, MenuItem } from "@mui/material";
+import CreateGroup from "./Group/CreateGroup";
 
 const HomePage = () => {
   const navigate = useNavigate();
@@ -23,6 +25,8 @@ const HomePage = () => {
   const [content, setContent] = useState(null);
 
   const [isProfile, setIsProfile] = useState(false);
+
+  const [isGroup, setIsGroup] = useState(false);
 
   const handleSearch = () => {};
   const handleClickOnChatCard = () => {
@@ -40,6 +44,19 @@ const HomePage = () => {
   const handleCloseOpenProfile = () => {
     setIsProfile(false);
   };
+
+  const [anchorEl, setAnchorEl] = useState(null);
+  const open = Boolean(anchorEl);
+  const handleClick = (event) => {
+    setAnchorEl(event.currentTarget);
+  };
+  const handleClose = () => {
+    setAnchorEl(null);
+  };
+
+  const handleCreatGroup = () => {
+    setIsGroup(true);
+  };
   return (
     <div className="relative">
       <div className="py-14 bg-[#00a884] w-full"></div>
@@ -47,10 +64,13 @@ const HomePage = () => {
         {/* leftside */}
         <div className="w-[30%] bg-[#e8e9ec] h-full">
           {/* profile popup */}
+          {isGroup && (
+            <CreateGroup setIsGroup={setIsGroup} handleClose={handleClose} />
+          )}
           {isProfile && (
             <Profile handleCloseOpenProfile={handleCloseOpenProfile} />
           )}
-          {!isProfile && (
+          {!isProfile && !isGroup && (
             <div className="w-full">
               <div className="flex justify-between items-center p-3">
                 <div
@@ -72,6 +92,31 @@ const HomePage = () => {
                     }}
                   />
                   <BiCommentDetail />
+                  <div>
+                    <BsThreeDotsVertical
+                      id="basic-button"
+                      aria-controls={open ? "basic-menu" : undefined}
+                      aria-haspopup="true"
+                      aria-expanded={open ? "true" : undefined}
+                      onClick={handleClick}
+                    />
+
+                    <Menu
+                      id="basic-menu"
+                      anchorEl={anchorEl}
+                      open={open}
+                      onClose={handleClose}
+                      MenuListProps={{
+                        "aria-labelledby": "basic-button",
+                      }}
+                    >
+                      <MenuItem onClick={handleClose}>Profile</MenuItem>
+                      <MenuItem onClick={handleCreatGroup}>
+                        Create Group
+                      </MenuItem>
+                      <MenuItem onClick={handleClose}>Logout</MenuItem>
+                    </Menu>
+                  </div>
                 </div>
               </div>
 
