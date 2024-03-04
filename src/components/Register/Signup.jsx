@@ -2,7 +2,6 @@ import { Alert, Button, Snackbar } from "@mui/material";
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
-import { currentUser, register } from "../../Redux/Auth/Action";
 import { signUp } from "../../reduxtoolkit/authSlice";
 import { BASE_API_URL } from "../../config/app";
 import { useFormik } from "formik";

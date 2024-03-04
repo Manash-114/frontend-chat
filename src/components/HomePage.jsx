@@ -18,12 +18,18 @@ import { Button, Menu, MenuItem } from "@mui/material";
 import CreateGroup from "./Group/CreateGroup";
 import { useDispatch, useSelector } from "react-redux";
 import { BASE_API_URL } from "../config/app";
-import { currentUser, signIn, signout } from "../reduxtoolkit/authSlice";
+import {
+  currentUser,
+  searchUser,
+  signIn,
+  signout,
+} from "../reduxtoolkit/authSlice";
 
 const HomePage = () => {
   const auth = useSelector((store) => store.auth);
   const navigate = useNavigate();
-  const [query, setQuerys] = useState(null);
+  const [searchQuery, setSearchQuery] = useState("");
+
   const [currentChat, setCurrentChat] = useState(null);
 
   const [content, setContent] = useState(null);
@@ -32,7 +38,23 @@ const HomePage = () => {
 
   const [isGroup, setIsGroup] = useState(false);
 
-  const handleSearch = () => {};
+  const [searchSuggestion, setSearchSuggestion] = useState([]);
+
+  const cacheSearchData = useSelector((store) => store.auth.searchUser);
+
+  const getSearchSuggestion = async () => {
+    // console.log("api call with ", searchQuery);
+    const res = await fetch(`${BASE_API_URL}/api/users/${searchQuery}`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${tokenFromLocal}`,
+      },
+    });
+    const resData = await res.json();
+    dispatch(searchUser({ [searchQuery]: resData }));
+    setSearchSuggestion(resData);
+  };
   const handleClickOnChatCard = () => {
     setCurrentChat(true);
   };
@@ -97,6 +119,21 @@ const HomePage = () => {
       navigate("/signin");
     }
   }, []);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      console.log("cache data", cacheSearchData);
+      if (cacheSearchData[searchQuery]) {
+        setSearchSuggestion(cacheSearchData[searchQuery]);
+        console.log("seach suggestion", searchSuggestion);
+      } else {
+        if (searchQuery.length > 0) getSearchSuggestion();
+      }
+    }, 200);
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [searchQuery]);
 
   return (
     <div className="relative">
@@ -166,11 +203,10 @@ const HomePage = () => {
                   type="text"
                   placeholder="Search or start new Chat"
                   className="border-none outline-none bg-slate-200 rounded-md w-[93%] py-2 pl-9 "
+                  value={searchQuery}
                   onChange={(e) => {
-                    setQuerys(e.target.value);
-                    handleSearch(e.target.value);
+                    setSearchQuery(e.target.value);
                   }}
-                  value={query}
                 />
                 <AiOutlineSearch className="left-5 top-7 absolute" />
                 <div>
@@ -180,8 +216,8 @@ const HomePage = () => {
 
               {/* all user */}
               <div className="bg-white overflow-y-scroll h-[72vh] px-3">
-                {query &&
-                  [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1].map((item) => (
+                {searchQuery &&
+                  searchSuggestion?.map((item) => (
                     <div onClick={handleClickOnChatCard}>
                       <hr />
                       <ChatCard />

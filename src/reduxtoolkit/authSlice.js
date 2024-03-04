@@ -5,6 +5,7 @@ const authSlice = createSlice({
   initialState: {
     signin: false,
     currentUser: {},
+    searchUser: {},
   },
   reducers: {
     signIn: (state, action) => {
@@ -21,8 +22,12 @@ const authSlice = createSlice({
       state.currentUser = {};
       localStorage.removeItem("token");
     },
+    searchUser: (state, action) => {
+      state.searchUser = { ...action.payload, ...state.searchUser };
+    },
   },
 });
 
-export const { signIn, signUp, currentUser, signout } = authSlice.actions;
+export const { signIn, signUp, currentUser, signout, searchUser } =
+  authSlice.actions;
 export default authSlice.reducer;
