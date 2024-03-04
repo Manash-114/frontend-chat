@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { TbCircleDashed } from "react-icons/tb";
 import { BiCommentDetail } from "react-icons/bi";
 import { AiOutlineSearch } from "react-icons/ai";
@@ -16,8 +16,12 @@ import { useNavigate } from "react-router-dom";
 import Profile from "./Profile/Profile";
 import { Button, Menu, MenuItem } from "@mui/material";
 import CreateGroup from "./Group/CreateGroup";
+import { useDispatch, useSelector } from "react-redux";
+import { BASE_API_URL } from "../config/app";
+import { currentUser, signIn, signout } from "../reduxtoolkit/authSlice";
 
 const HomePage = () => {
+  const auth = useSelector((store) => store.auth);
   const navigate = useNavigate();
   const [query, setQuerys] = useState(null);
   const [currentChat, setCurrentChat] = useState(null);
@@ -33,8 +37,8 @@ const HomePage = () => {
     setCurrentChat(true);
   };
 
+  const tokenFromLocal = localStorage.getItem("token");
   const handleCreateNewMessage = () => {};
-
   //for profile popup
   const handleNavigate = () => {
     // navigate("/profile")
@@ -57,6 +61,43 @@ const HomePage = () => {
   const handleCreatGroup = () => {
     setIsGroup(true);
   };
+
+  const dispatch = useDispatch();
+  const handleLogout = () => {
+    dispatch(signout());
+    navigate("/signin");
+  };
+
+  // useEffect(() => {
+  //   if (!auth.reqUser) navigate("/signup");
+  // }, [auth.reqUser]);
+  const getCurrentUser = async (jwtToken) => {
+    try {
+      const res = await fetch(`${BASE_API_URL}/api/users/profile`, {
+        method: "GET",
+        headers: {
+          "Content-type": "application/json",
+          Authorization: `Bearer ${jwtToken}`,
+        },
+      });
+
+      const resData = await res.json();
+      console.log("data from backend ", resData);
+      dispatch(currentUser(resData));
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  useEffect(() => {
+    if (auth.signin) {
+      console.log("get user detail called");
+      getCurrentUser(tokenFromLocal);
+    } else {
+      navigate("/signin");
+    }
+  }, []);
+
   return (
     <div className="relative">
       <div className="py-14 bg-[#00a884] w-full"></div>
@@ -78,11 +119,11 @@ const HomePage = () => {
                   className="flex items-center space-x-3"
                 >
                   <img
-                    className="rounded-full w-10 h-10 cursor-pointer"
-                    src="https://cdn.pixabay.com/photo/2024/02/23/15/11/honey-bee-8592216_1280.jpg"
+                    className="rounded-full w-10 h-10 cursor-pointer border-1 border-black"
+                    src="https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png"
                     alt=""
                   />
-                  <p>username</p>
+                  <p>{auth.currentUser.fullName}</p>
                 </div>
                 <div className="space-x-3 text-2xl flex">
                   <TbCircleDashed
@@ -114,7 +155,7 @@ const HomePage = () => {
                       <MenuItem onClick={handleCreatGroup}>
                         Create Group
                       </MenuItem>
-                      <MenuItem onClick={handleClose}>Logout</MenuItem>
+                      <MenuItem onClick={handleLogout}>Logout</MenuItem>
                     </Menu>
                   </div>
                 </div>

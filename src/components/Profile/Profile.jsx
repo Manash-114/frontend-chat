@@ -1,8 +1,10 @@
 import React, { useState } from "react";
 import { BsArrowLeft, BsCheck2, BsPencil } from "react-icons/bs";
+import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 
 const Profile = ({ handleCloseOpenProfile }) => {
+  const { currentUser } = useSelector((store) => store.auth);
   const [userName, setUserName] = useState("");
 
   const handleNameUpdate = () => {
@@ -28,7 +30,7 @@ const Profile = ({ handleCloseOpenProfile }) => {
         <label htmlFor="imgInput">
           <img
             className="rounded-full w-[15vw] h-[15vw] cursor-pointer"
-            src="https://media.istockphoto.com/id/1173184751/photo/asiatic-lion-a-critically-endangered-species.jpg?s=2048x2048&w=is&k=20&c=vQA2rkldDQpRRcg4dW83UtA61uwozd0Uh8g6bd8zJ7E="
+            src="https://cdn.pixabay.com/photo/2017/04/20/07/08/select-2244784_1280.png"
             alt=""
           />
         </label>
@@ -41,7 +43,7 @@ const Profile = ({ handleCloseOpenProfile }) => {
         <p className="py-3 ">YourName</p>
         {!flag && (
           <div className="flex w-full justify-between items-center">
-            <p className="py-3">{userName || "username"}</p>
+            <p className="py-3">{userName || currentUser.fullName}</p>
             <BsPencil
               className="cursor-pointer"
               onClick={() => {
