@@ -201,7 +201,7 @@ const HomePage = () => {
               <div className="relative flex justify-center items-center bg-white py-4 px-3">
                 <input
                   type="text"
-                  placeholder="Search or start new Chat"
+                  placeholder="Search other user or start new Chat"
                   className="border-none outline-none bg-slate-200 rounded-md w-[93%] py-2 pl-9 "
                   value={searchQuery}
                   onChange={(e) => {
@@ -217,12 +217,15 @@ const HomePage = () => {
               {/* all user */}
               <div className="bg-white overflow-y-scroll h-[72vh] px-3">
                 {searchQuery &&
-                  searchSuggestion?.map((item) => (
-                    <div onClick={handleClickOnChatCard}>
-                      <hr />
-                      <ChatCard />
-                    </div>
-                  ))}
+                  searchSuggestion?.map((item) => {
+                    if (item.id != auth.currentUser.id)
+                      return (
+                        <div onClick={handleClickOnChatCard}>
+                          <hr />
+                          <ChatCard item={item} />
+                        </div>
+                      );
+                  })}
               </div>
             </div>
           )}
