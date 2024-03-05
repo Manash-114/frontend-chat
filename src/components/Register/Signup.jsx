@@ -74,9 +74,9 @@ const Signup = () => {
   // }, [auth.reqUser]);
 
   const tokenFromLocal = localStorage.getItem("token");
-  useEffect(() => {
-    if (tokenFromLocal) navigate("/");
-  }, []);
+  // useEffect(() => {
+  //   if (tokenFromLocal) navigate("/");
+  // }, []);
 
   return (
     <div>

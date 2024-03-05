@@ -24,46 +24,48 @@ import {
   signIn,
   signout,
 } from "../reduxtoolkit/authSlice";
+import useSearchUser from "../apicalls/useSearchUser";
+import useGetCurrentUser from "../apicalls/useGetCurrentUser";
+import useGetAllChats from "../apicalls/useGetAllChats";
+import { createChat } from "../reduxtoolkit/chatSlice";
 
 const HomePage = () => {
   const auth = useSelector((store) => store.auth);
   const navigate = useNavigate();
+  const tokenFromLocal = localStorage.getItem("token");
   const [searchQuery, setSearchQuery] = useState("");
-
   const [currentChat, setCurrentChat] = useState(null);
-
   const [content, setContent] = useState(null);
-
   const [isProfile, setIsProfile] = useState(false);
-
   const [isGroup, setIsGroup] = useState(false);
 
-  const [searchSuggestion, setSearchSuggestion] = useState([]);
+  //custom hook for getting the searchSuggesstion
+  const searchSuggestion = useSearchUser(searchQuery, tokenFromLocal);
 
-  const cacheSearchData = useSelector((store) => store.auth.searchUser);
+  //customHook for getCurrentUser
+  useGetCurrentUser(tokenFromLocal);
 
-  const getSearchSuggestion = async () => {
-    // console.log("api call with ", searchQuery);
-    const res = await fetch(`${BASE_API_URL}/api/users/${searchQuery}`, {
-      method: "GET",
+  const createSingleChat = async (token, uId) => {
+    const res = await fetch(`${BASE_API_URL}/api/chats/single`, {
+      method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${tokenFromLocal}`,
+        Authorization: `Bearer ${token}`,
       },
+      body: JSON.stringify({ userId: uId }),
     });
     const resData = await res.json();
-    dispatch(searchUser({ [searchQuery]: resData }));
-    setSearchSuggestion(resData);
-  };
-  const handleClickOnChatCard = () => {
-    setCurrentChat(true);
+
+    dispatch(createChat(resData));
   };
 
-  const tokenFromLocal = localStorage.getItem("token");
+  //all chatOfUsers
+  const allUserChats = useGetAllChats(tokenFromLocal);
+
   const handleCreateNewMessage = () => {};
+
   //for profile popup
   const handleNavigate = () => {
-    // navigate("/profile")
     setIsProfile(!isProfile);
   };
 
@@ -90,51 +92,10 @@ const HomePage = () => {
     navigate("/signin");
   };
 
-  // useEffect(() => {
-  //   if (!auth.reqUser) navigate("/signup");
-  // }, [auth.reqUser]);
-  const getCurrentUser = async (jwtToken) => {
-    try {
-      const res = await fetch(`${BASE_API_URL}/api/users/profile`, {
-        method: "GET",
-        headers: {
-          "Content-type": "application/json",
-          Authorization: `Bearer ${jwtToken}`,
-        },
-      });
-
-      const resData = await res.json();
-      console.log("data from backend ", resData);
-      dispatch(currentUser(resData));
-    } catch (error) {
-      console.log(error);
-    }
+  const handleCurrentChat = (item) => {
+    setCurrentChat(item);
   };
-
-  useEffect(() => {
-    if (auth.signin) {
-      console.log("get user detail called");
-      getCurrentUser(tokenFromLocal);
-    } else {
-      navigate("/signin");
-    }
-  }, []);
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      console.log("cache data", cacheSearchData);
-      if (cacheSearchData[searchQuery]) {
-        setSearchSuggestion(cacheSearchData[searchQuery]);
-        console.log("seach suggestion", searchSuggestion);
-      } else {
-        if (searchQuery.length > 0) getSearchSuggestion();
-      }
-    }, 200);
-    return () => {
-      clearTimeout(timer);
-    };
-  }, [searchQuery]);
-
+  console.log("current chat", currentChat);
   return (
     <div className="relative">
       <div className="py-14 bg-[#00a884] w-full"></div>
@@ -220,11 +181,62 @@ const HomePage = () => {
                   searchSuggestion?.map((item) => {
                     if (item.id != auth.currentUser.id)
                       return (
-                        <div onClick={handleClickOnChatCard}>
+                        <div
+                          onClick={() => {
+                            createSingleChat(tokenFromLocal, item.id);
+                            setSearchQuery("");
+                          }}
+                        >
                           <hr />
-                          <ChatCard item={item} />
+                          <ChatCard
+                            name={item.fullName}
+                            img={
+                              item.profileImage ||
+                              "https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png"
+                            }
+                            key={item.id}
+                          />
                         </div>
                       );
+                  })}
+
+                {!searchQuery &&
+                  allUserChats?.map((item) => {
+                    return (
+                      <div
+                        className="hover:bg-slate-400"
+                        onClick={() => {
+                          handleCurrentChat(item);
+                        }}
+                      >
+                        <hr />
+                        {item.group ? (
+                          <ChatCard
+                            name={item.chatName}
+                            img={
+                              item.chatImage ||
+                              "https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png"
+                            }
+                          />
+                        ) : (
+                          <ChatCard
+                            isChat={true}
+                            name={
+                              auth.currentUser.id !== item.users[0].id
+                                ? item.users[0].fullName
+                                : item.users[1].fullName
+                            }
+                            img={
+                              auth.currentUser.id !== item.users[0].id
+                                ? item.users[0].profileImage ||
+                                  "https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png"
+                                : item.users[1].profileImage ||
+                                  "https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png"
+                            }
+                          />
+                        )}
+                      </div>
+                    );
                   })}
               </div>
             </div>
@@ -257,10 +269,24 @@ const HomePage = () => {
                 <div className="py-3 space-x-4 flex items-center px-3">
                   <img
                     className="w-10 h-10 rounded-full"
-                    src="https://cdn.pixabay.com/photo/2024/02/27/02/06/ai-generated-8599226_1280.jpg"
+                    src={
+                      currentChat.group
+                        ? currentChat.chatImage
+                        : auth.currentUser.id != currentChat.users[0].id
+                        ? currentChat.users[0].profileImage ||
+                          "https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png"
+                        : currentChat.users[1].profileImage ||
+                          "https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png"
+                    }
                     alt=""
                   />
-                  <p>username</p>
+                  <p>
+                    {currentChat.group
+                      ? currentChat.chatName
+                      : auth.currentUser.id != currentChat.users[0].id
+                      ? currentChat.users[0].fullName
+                      : currentChat.users[1].fullName}
+                  </p>
                 </div>
                 <div className="py-3 flex space-x-4 items-center justify-center px-3">
                   <AiOutlineSearch />
