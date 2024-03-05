@@ -28,9 +28,11 @@ import useSearchUser from "../apicalls/useSearchUser";
 import useGetCurrentUser from "../apicalls/useGetCurrentUser";
 import useGetAllChats from "../apicalls/useGetAllChats";
 import { createChat } from "../reduxtoolkit/chatSlice";
+import { createNewMessage, getMessages } from "../reduxtoolkit/messageSlice";
 
 const HomePage = () => {
   const auth = useSelector((store) => store.auth);
+  const message = useSelector((store) => store.message);
   const navigate = useNavigate();
   const tokenFromLocal = localStorage.getItem("token");
   const [searchQuery, setSearchQuery] = useState("");
@@ -62,7 +64,30 @@ const HomePage = () => {
   //all chatOfUsers
   const allUserChats = useGetAllChats(tokenFromLocal);
 
-  const handleCreateNewMessage = () => {};
+  const handleCreateNewMessage = () => {
+    createMessage();
+  };
+
+  //createmessage
+
+  const createMessage = async () => {
+    console.log("from create message", auth.currentUser.id);
+    const res = await fetch(`${BASE_API_URL}/api/messages/send`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${tokenFromLocal}`,
+      },
+      body: JSON.stringify({
+        chatId: currentChat.id,
+        content: content,
+      }),
+    });
+
+    const resData = await res.json();
+    console.log("create message", resData);
+    dispatch(createNewMessage(resData));
+  };
 
   //for profile popup
   const handleNavigate = () => {
@@ -95,7 +120,28 @@ const HomePage = () => {
   const handleCurrentChat = (item) => {
     setCurrentChat(item);
   };
-  console.log("current chat", currentChat);
+
+  useEffect(() => {
+    if (currentChat?.id) {
+      getAllMessages();
+    }
+  }, [currentChat, message?.newMessages]);
+
+  const getAllMessages = async () => {
+    const res = await fetch(
+      `${BASE_API_URL}/api/messages/chat/${currentChat?.id}`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${tokenFromLocal}`,
+        },
+      }
+    );
+    const resData = await res.json();
+    dispatch(getMessages(resData));
+  };
+
   return (
     <div className="relative">
       <div className="py-14 bg-[#00a884] w-full"></div>
@@ -298,14 +344,14 @@ const HomePage = () => {
             {/* message section */}
             <div className="px-5 h-[85vh] overflow-x-scroll ">
               <div className="space-y-1 flex flex-col justify-center  mt-20 py-2">
-                {[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1].map(
-                  (item, i) => (
+                {message?.messages.length > 0 &&
+                  message?.messages?.map((item, i) => (
                     <MessageCard
-                      isReqUserMessage={i % 2 == 0}
-                      content={"message"}
+                      key={item.id}
+                      isReqUserMessage={item.user.id === auth.currentUser.id}
+                      content={item.content}
                     />
-                  )
-                )}
+                  ))}
               </div>
             </div>
             {/* footer part */}
