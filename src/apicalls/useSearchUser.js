@@ -4,17 +4,14 @@ import { searchUser } from "../reduxtoolkit/authSlice";
 import { BASE_API_URL } from "../config/app";
 
 const useSearchUser = (searchQuery, tokenFromLocal) => {
-  console.log("user custom hook ");
   const dispatch = useDispatch();
   const [searchSuggestion, setSearchSuggestion] = useState([]);
   const cacheSearchData = useSelector((store) => store.auth.searchUser);
   //fetch data;
   useEffect(() => {
     const timer = setTimeout(() => {
-      console.log("cache data", cacheSearchData);
       if (cacheSearchData[searchQuery]) {
         setSearchSuggestion(cacheSearchData[searchQuery]);
-        console.log("seach suggestion", searchSuggestion);
       } else {
         if (searchQuery.length > 0) getSearchSuggestion();
       }

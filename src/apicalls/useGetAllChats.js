@@ -26,6 +26,7 @@ const useGetAllChats = (token) => {
       },
     });
     const resData = await res.json();
+    console.log("all chat of user", resData);
     dispatch(getUserChat(resData));
   };
 

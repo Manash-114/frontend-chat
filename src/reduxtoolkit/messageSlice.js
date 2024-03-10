@@ -13,8 +13,13 @@ const messageSlice = createSlice({
     getMessages: (state, action) => {
       state.messages = action.payload;
     },
+    clearMessageStore: (state, action) => {
+      state.messages = [];
+      state.newMessages = [];
+    },
   },
 });
 
-export const { createNewMessage, getMessages } = messageSlice.actions;
+export const { createNewMessage, getMessages, clearMessageStore } =
+  messageSlice.actions;
 export default messageSlice.reducer;

@@ -63,20 +63,7 @@ const Signup = () => {
     setOpenErrorSnackbar(false);
   };
 
-  // useEffect(() => {
-  //   if (token) dispatch(currentUser(token));
-  // }, [token]);
-
-  // useEffect(() => {
-  //   if (auth.reqUser) {
-  //     navigate("/");
-  //   }
-  // }, [auth.reqUser]);
-
   const tokenFromLocal = localStorage.getItem("token");
-  // useEffect(() => {
-  //   if (tokenFromLocal) navigate("/");
-  // }, []);
 
   return (
     <div>

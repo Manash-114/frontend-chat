@@ -46,9 +46,10 @@ const Signin = () => {
       } else {
         const token = resData.jwt;
         localStorage.setItem("token", token);
-        dispatch(signIn());
+        dispatch(signIn(token));
       }
     } catch (error) {
+      setOpenSnackbar(true);
       console.log(error);
     }
   };
@@ -111,7 +112,7 @@ const Signin = () => {
       </div>
       <Snackbar
         open={openSnackbar}
-        autoHideDuration={3000}
+        autoHideDuration={6000}
         onClose={handleSnackbarClose}
       >
         <Alert

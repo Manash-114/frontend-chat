@@ -25,13 +25,17 @@ import {
   signout,
 } from "../reduxtoolkit/authSlice";
 import useSearchUser from "../apicalls/useSearchUser";
-import useGetCurrentUser from "../apicalls/useGetCurrentUser";
+import useGetCurrentUser from "../apicalls/getCurrentUser";
 import useGetAllChats from "../apicalls/useGetAllChats";
-import { createChat } from "../reduxtoolkit/chatSlice";
-import { createNewMessage, getMessages } from "../reduxtoolkit/messageSlice";
+import { clearStore, createChat } from "../reduxtoolkit/chatSlice";
+import { getAllMessages } from "../apicalls/messages/getAllMessages";
+import { createMessage } from "../apicalls/messages/createMessage";
+import { getAllUserChat } from "../apicalls/singlechat.js/getAllUserChat";
+import { clearMessageStore } from "../reduxtoolkit/messageSlice";
 
 const HomePage = () => {
   const auth = useSelector((store) => store.auth);
+  const { chats } = useSelector((store) => store.chat);
   const message = useSelector((store) => store.message);
   const navigate = useNavigate();
   const tokenFromLocal = localStorage.getItem("token");
@@ -40,13 +44,9 @@ const HomePage = () => {
   const [content, setContent] = useState(null);
   const [isProfile, setIsProfile] = useState(false);
   const [isGroup, setIsGroup] = useState(false);
-
+  const dispatch = useDispatch();
   //custom hook for getting the searchSuggesstion
   const searchSuggestion = useSearchUser(searchQuery, tokenFromLocal);
-
-  //customHook for getCurrentUser
-  useGetCurrentUser(tokenFromLocal);
-
   const createSingleChat = async (token, uId) => {
     const res = await fetch(`${BASE_API_URL}/api/chats/single`, {
       method: "POST",
@@ -57,36 +57,21 @@ const HomePage = () => {
       body: JSON.stringify({ userId: uId }),
     });
     const resData = await res.json();
-
     dispatch(createChat(resData));
   };
 
   //all chatOfUsers
-  const allUserChats = useGetAllChats(tokenFromLocal);
+  // const allUserChats = [];
+  // if (auth.currentUser) allUserChats = useGetAllChats(tokenFromLocal);
 
   const handleCreateNewMessage = () => {
-    createMessage();
-  };
-
-  //createmessage
-
-  const createMessage = async () => {
-    console.log("from create message", auth.currentUser.id);
-    const res = await fetch(`${BASE_API_URL}/api/messages/send`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${tokenFromLocal}`,
-      },
-      body: JSON.stringify({
-        chatId: currentChat.id,
-        content: content,
-      }),
-    });
-
-    const resData = await res.json();
-    console.log("create message", resData);
-    dispatch(createNewMessage(resData));
+    createMessage(
+      dispatch,
+      auth.currentUser.id,
+      tokenFromLocal,
+      currentChat.id,
+      content
+    );
   };
 
   //for profile popup
@@ -111,9 +96,10 @@ const HomePage = () => {
     setIsGroup(true);
   };
 
-  const dispatch = useDispatch();
   const handleLogout = () => {
     dispatch(signout());
+    dispatch(clearStore());
+    dispatch(clearMessageStore());
     navigate("/signin");
   };
 
@@ -123,25 +109,15 @@ const HomePage = () => {
 
   useEffect(() => {
     if (currentChat?.id) {
-      getAllMessages();
+      getAllMessages(dispatch, currentChat, tokenFromLocal);
     }
   }, [currentChat, message?.newMessages]);
 
-  const getAllMessages = async () => {
-    const res = await fetch(
-      `${BASE_API_URL}/api/messages/chat/${currentChat?.id}`,
-      {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${tokenFromLocal}`,
-        },
-      }
-    );
-    const resData = await res.json();
-    dispatch(getMessages(resData));
-  };
-
+  useEffect(() => {
+    if (auth.signin) {
+      getAllUserChat(auth.token, dispatch);
+    }
+  }, [auth.currentUser]);
   return (
     <div className="relative">
       <div className="py-14 bg-[#00a884] w-full"></div>
@@ -153,18 +129,22 @@ const HomePage = () => {
             <CreateGroup setIsGroup={setIsGroup} handleClose={handleClose} />
           )}
           {isProfile && (
-            <Profile handleCloseOpenProfile={handleCloseOpenProfile} />
+            <Profile
+              handleCloseOpenProfile={handleCloseOpenProfile}
+              handleClose={handleClose}
+            />
           )}
           {!isProfile && !isGroup && (
             <div className="w-full">
               <div className="flex justify-between items-center p-3">
-                <div
-                  onClick={handleNavigate}
-                  className="flex items-center space-x-3"
-                >
+                <div className="flex items-center space-x-3">
                   <img
-                    className="rounded-full w-10 h-10 cursor-pointer border-1 border-black"
-                    src="https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png"
+                    className="rounded-full w-10 h-10  border-1 border-black"
+                    src={
+                      auth.currentUser.profileImage
+                        ? auth.currentUser.profileImage
+                        : "https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png"
+                    }
                     alt=""
                   />
                   <p>{auth.currentUser.fullName}</p>
@@ -195,7 +175,7 @@ const HomePage = () => {
                         "aria-labelledby": "basic-button",
                       }}
                     >
-                      <MenuItem onClick={handleClose}>Profile</MenuItem>
+                      <MenuItem onClick={handleNavigate}>Profile</MenuItem>
                       <MenuItem onClick={handleCreatGroup}>
                         Create Group
                       </MenuItem>
@@ -224,6 +204,7 @@ const HomePage = () => {
               {/* all user */}
               <div className="bg-white overflow-y-scroll h-[72vh] px-3">
                 {searchQuery &&
+                  searchSuggestion.length > 0 &&
                   searchSuggestion?.map((item) => {
                     if (item.id != auth.currentUser.id)
                       return (
@@ -247,9 +228,10 @@ const HomePage = () => {
                   })}
 
                 {!searchQuery &&
-                  allUserChats?.map((item) => {
+                  chats?.map((item) => {
                     return (
                       <div
+                        key={item.id}
                         className="hover:bg-slate-400"
                         onClick={() => {
                           handleCurrentChat(item);

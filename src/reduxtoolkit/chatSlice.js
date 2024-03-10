@@ -14,11 +14,17 @@ const chatSlice = createSlice({
       const fin = state.chats.find((li) => li.id == action.payload.id);
       if (!fin) state.chats.push(action.payload);
     },
-    createGroupChat: (state, action) => {},
+    createGroupChat: (state, action) => {
+      state.chats.push(action.payload);
+    },
     getUserChat: (state, action) => {
       state.chats = action.payload;
     },
+    clearStore: (state, action) => {
+      state.chats = [];
+    },
   },
 });
-export const { createChat, createGroupChat, getUserChat } = chatSlice.actions;
+export const { createChat, createGroupChat, getUserChat, clearStore } =
+  chatSlice.actions;
 export default chatSlice.reducer;

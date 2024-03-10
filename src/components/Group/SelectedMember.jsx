@@ -9,9 +9,12 @@ const SelectedMember = ({ handleRemoveMember, member }) => {
         src="https://cdn.pixabay.com/photo/2024/02/23/17/26/clock-8592484_960_720.jpg"
         alt=""
       />
-      <p className="px-2">username</p>
+      <p className="px-2">{member.fullName}</p>
       <AiOutlineClose
-        onClick={handleRemoveMember}
+        onClick={() => {
+          console.log("from selected ", member);
+          handleRemoveMember();
+        }}
         className="pr-1 cursor-pointer"
       />
     </div>
