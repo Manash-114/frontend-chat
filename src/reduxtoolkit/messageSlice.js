@@ -4,7 +4,7 @@ const messageSlice = createSlice({
   name: "message",
   initialState: {
     messages: [],
-    newMessages: [],
+    newMessages: null,
   },
   reducers: {
     createNewMessage: (state, action) => {
@@ -17,9 +17,16 @@ const messageSlice = createSlice({
       state.messages = [];
       state.newMessages = [];
     },
+    updateMessages: (state, action) => {
+      state.messages.push(action.payload);
+    },
   },
 });
 
-export const { createNewMessage, getMessages, clearMessageStore } =
-  messageSlice.actions;
+export const {
+  createNewMessage,
+  getMessages,
+  clearMessageStore,
+  updateMessages,
+} = messageSlice.actions;
 export default messageSlice.reducer;

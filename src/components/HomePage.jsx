@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { TbCircleDashed } from "react-icons/tb";
 import { BiCommentDetail } from "react-icons/bi";
 import { AiOutlineSearch } from "react-icons/ai";
@@ -31,7 +31,13 @@ import { clearStore, createChat } from "../reduxtoolkit/chatSlice";
 import { getAllMessages } from "../apicalls/messages/getAllMessages";
 import { createMessage } from "../apicalls/messages/createMessage";
 import { getAllUserChat } from "../apicalls/singlechat.js/getAllUserChat";
-import { clearMessageStore } from "../reduxtoolkit/messageSlice";
+import {
+  clearMessageStore,
+  createNewMessage,
+  updateMessages,
+} from "../reduxtoolkit/messageSlice";
+import SockJS from "sockjs-client/dist/sockjs";
+import { over } from "stompjs";
 
 const HomePage = () => {
   const auth = useSelector((store) => store.auth);
@@ -107,6 +113,38 @@ const HomePage = () => {
     setCurrentChat(item);
   };
 
+  const [stompClient, setStompClient] = useState();
+  const [connected, setConnected] = useState(false);
+
+  const connect = () => {
+    const sock = new SockJS(`${BASE_API_URL}/ws`);
+    const temp = over(sock);
+    setStompClient(temp);
+    const headers = {
+      Authorization: `Bearer ${tokenFromLocal}`,
+      "X-XSRF-TOKEN": getCookies("XSRF-TOKEN"),
+    };
+    temp.connect(headers, onConnect, onError);
+  };
+
+  function getCookies(name) {
+    const value = `; ${document.cookie}`;
+    console.log("cok", value);
+    const parts = value.split(`; ${name}=`);
+    console.log("parts", parts);
+    if (parts.length == 2) {
+      return parts.pop().split(";").shift();
+    }
+  }
+
+  const onError = (error) => {
+    console.log("Error on connect ws", error);
+  };
+
+  const onConnect = () => {
+    setConnected(true);
+  };
+
   useEffect(() => {
     if (currentChat?.id) {
       getAllMessages(dispatch, currentChat, tokenFromLocal);
@@ -118,6 +156,58 @@ const HomePage = () => {
       getAllUserChat(auth.token, dispatch);
     }
   }, [auth.currentUser]);
+
+  const [mes, setMes] = useState([]);
+  console.log("mes", mes);
+  useEffect(() => {
+    if (message.newMessages && stompClient) {
+      console.log("send to ws");
+      setMes([...message.messages, message.newMessages]);
+      stompClient?.send(
+        "/app/message",
+        {},
+        JSON.stringify(message.newMessages)
+      );
+    }
+  }, [message.newMessages]);
+
+  const onMessageReceive = (payload) => {
+    console.log("receive message ", JSON.parse(payload.body));
+    const receiveMessage = JSON.parse(payload.body);
+    setMes([...message.messages, receiveMessage]);
+    dispatch(updateMessages(receiveMessage));
+  };
+
+  useEffect(() => {
+    if (connected && stompClient && auth.currentUser && currentChat) {
+      const subs = stompClient.subscribe(
+        "/group/" + currentChat.id,
+        onMessageReceive
+      );
+      return () => {
+        subs.unsubscribe();
+      };
+    }
+  });
+
+  useEffect(() => {
+    setMes(message.messages);
+  }, [message.messages]);
+
+  useEffect(() => {
+    connect();
+  }, []);
+
+  // for scrollbar always in buttom
+  const containerRef = useRef(null);
+  useEffect(() => {
+    // Check if the ref has been assigned
+    if (containerRef.current) {
+      // Scroll to the bottom after rendering messages
+      containerRef.current.scrollTop = containerRef.current.scrollHeight;
+    }
+  }, [mes]); // Trigger the effect whenever `mes` changes
+
   return (
     <div className="relative">
       <div className="py-14 bg-[#00a884] w-full"></div>
@@ -324,10 +414,13 @@ const HomePage = () => {
             </div>
 
             {/* message section */}
-            <div className="px-5 h-[85vh] overflow-x-scroll ">
+            <div
+              className="px-5 py-5 h-[85vh] overflow-x-scroll "
+              ref={containerRef}
+            >
               <div className="space-y-1 flex flex-col justify-center  mt-20 py-2">
-                {message?.messages.length > 0 &&
-                  message?.messages?.map((item, i) => (
+                {mes.length > 0 &&
+                  mes?.map((item, i) => (
                     <MessageCard
                       key={item.id}
                       isReqUserMessage={item.user.id === auth.currentUser.id}
